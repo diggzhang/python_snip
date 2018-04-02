@@ -101,6 +101,12 @@ t4 = SSHOperator(
     dag=dag
 )
 
+t5 = BashOperator(
+    task_id='print_date_2',
+    bash_command='date',
+    dag=dag)
+
 t2.set_upstream(t1)
 t3.set_upstream(t1)
 t4.set_upstream(t2)
+t4.set_downstream(t5)
