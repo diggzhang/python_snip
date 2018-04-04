@@ -1,22 +1,5 @@
 # -*- coding: utf-8 -*-
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 
-"""
-### Tutorial Documentation
-Documentation that goes along with the Airflow tutorial located
-[here](http://pythonhosted.org/airflow/tutorial.html)
-"""
 import airflow
 from airflow import DAG
 from airflow.operators.bash_operator import BashOperator
@@ -24,89 +7,118 @@ from datetime import timedelta
 from airflow.contrib.operators.ssh_operator import SSHOperator
 
 
-# these args will get passed on to each operator
-# you can override them on a per-task basis during operator initialization
+"""
+
+    data_source
+    etl
+
+"""
+
+
 default_args = {
-    'owner': 'airflow',
+    'owner': 'diggzhang',
     'depends_on_past': False,
     'start_date': airflow.utils.dates.days_ago(2),
-    'email': ['airflow@example.com'],
-    'email_on_failure': False,
-    'email_on_retry': False,
-    'retries': 1,
+    'email': ['diggzhang@gmail.com'],
+    'email_on_failure': True,
+    'email_on_retry': True,
+    'retries': 2,
     'retry_delay': timedelta(minutes=5),
-    # 'queue': 'bash_queue',
-    # 'pool': 'backfill',
-    # 'priority_weight': 10,
-    # 'end_date': datetime(2016, 1, 1),
-    # 'wait_for_downstream': False,
-    # 'dag': dag,
-    # 'adhoc':False,
-    # 'sla': timedelta(hours=2),
-    # 'execution_timeout': timedelta(seconds=300),
-    # 'on_failure_callback': some_function,
-    # 'on_success_callback': some_other_function,
-    # 'on_retry_callback': another_function,
-    # 'trigger_rule': u'all_success'
 }
 
 dag = DAG(
-    'shell_ssh_test',
+    'daily_reporter_airflow',
     default_args=default_args,
-    description='A simple tutorial DAG',
+    description='offline daily report scripts',
     schedule_interval=timedelta(days=1))
 
-# t1, t2 and t3 are examples of tasks created by instantiating operators
-t1 = BashOperator(
-    task_id='print_date',
-    bash_command='date',
-    dag=dag)
-
-t1.doc_md = """\
-        #### Task Documentation
-        You can document your task using the attributes `doc_md` (markdown),
-        `doc` (plain text), `doc_rst`, `doc_json`, `doc_yaml` which gets
-        rendered in the UI's Task Instance Details page.
-        ![img](http://montcs.bloomu.edu/~bobmon/Semesters/2012-01/491/import%20soul.png)
-        """
-
-dag.doc_md = __doc__
-
-t2 = BashOperator(
-    task_id='sleep',
+sleep_3_sec = BashOperator(
+    task_id='99_sleep_3_sec',
     depends_on_past=False,
-    bash_command='sleep 5',
+    bash_command='sleep 3 && date',
     dag=dag)
 
-templated_command = """
-        {% for i in range(5) %}
-            echo "{{ ds }}"
-                echo "{{ macros.ds_add(ds, 7)}}"
-                    echo "{{ params.my_param }}"
-                    {% endfor %}
-                    """
-
-t3 = BashOperator(
-    task_id='templated',
-    depends_on_past=False,
-    bash_command=templated_command,
-    params={'my_param': 'Parameter I passed in'},
-    dag=dag)
-
-
-t4 = SSHOperator(
+online_task01_onions_data_soruce = SSHOperator(
+    task_id='online_prepare_onions_data',
     ssh_conn_id='ssh_default',
-    task_id='ssh_to_other_host',
-    command='/bin/bash /tmp/test.sh ',
+    command='/bin/bash /tmp/test.sh online01',
+    timeout=10,
     dag=dag
 )
 
-t5 = BashOperator(
-    task_id='print_date_2',
-    bash_command='date',
-    dag=dag)
+online_task02_orders_data_soruce = SSHOperator(
+    task_id='online_prepare_orders_data',
+    ssh_conn_id='ssh_default',
+    command='/bin/bash /tmp/test_sleep_20.sh online02',
+    timeout=10,
+    dag=dag
+)
 
-t2.set_upstream(t1)
-t3.set_upstream(t1)
-t4.set_upstream(t2)
-t4.set_downstream(t5)
+# task#01 Prepare the underlying data source
+# 这部分可以把数仓环节拆出ter去
+task_01_prepare_underlying_data_source = SSHOperator(
+    task_id='01_prepare_underlying_data',
+    ssh_conn_id='ssh_default',
+    command='/bin/bash /tmp/test.sh 01',
+    timeout=10,
+    dag=dag
+)
+
+
+task_02_users_collection_monitor_data_source = SSHOperator(
+    task_id='02_users_collection_monitor',
+    ssh_conn_id='ssh_default',
+    command='/bin/bash /tmp/test.sh 02',
+    timeout=10,
+    dag=dag
+)
+
+task_03_tianji_underlying_data_source = SSHOperator(
+    task_id='03_tianji_underlying_data_source',
+    ssh_conn_id='ssh_default',
+    command='/bin/bash /tmp/test.sh 03',
+    timeout=10,
+    dag=dag
+)
+
+task_04_etl_underlying_data_source = SSHOperator(
+    task_id='04_etl_underlying_data_source',
+    ssh_conn_id='ssh_default',
+    command='/bin/bash /tmp/test.sh 04',
+    timeout=10,
+    dag=dag
+)
+
+task_05_videology_data_source = SSHOperator(
+    task_id='05_videology_data_source',
+    ssh_conn_id='ssh_default',
+    command='/bin/bash /tmp/test.sh 05',
+    timeout=10,
+    dag=dag
+)
+
+task_06_marketing_data_reporter = SSHOperator(
+    task_id='06_marketing_data_reporter',
+    ssh_conn_id='ssh_default',
+    command='/bin/bash /tmp/test.sh 06',
+    timeout=10,
+    dag=dag
+)
+
+task_07_bend_reporter = SSHOperator(
+    task_id='07_bend_reporter',
+    ssh_conn_id='ssh_default',
+    command='/bin/bash /tmp/test.sh 07',
+    timeout=10,
+    dag=dag
+)
+
+online_task01_onions_data_soruce.set_downstream(online_task02_orders_data_soruce)
+online_task02_orders_data_soruce.set_downstream(task_01_prepare_underlying_data_source)
+task_01_prepare_underlying_data_source.set_downstream(task_02_users_collection_monitor_data_source)
+task_02_users_collection_monitor_data_source.set_downstream(task_03_tianji_underlying_data_source)
+task_02_users_collection_monitor_data_source.set_downstream(task_04_etl_underlying_data_source)
+task_03_tianji_underlying_data_source.set_downstream(task_05_videology_data_source)
+task_03_tianji_underlying_data_source.set_downstream(task_06_marketing_data_reporter)
+task_03_tianji_underlying_data_source.set_downstream(task_07_bend_reporter)
+task_07_bend_reporter.set_downstream(sleep_3_sec)
